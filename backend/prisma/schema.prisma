@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  COLLEGE_ADMIN
+  HOD
+  FACULTY_ADVISOR
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum Accommodation {
+  HOSTELLER
+  DAY_SCHOLAR
+}
+
+enum StressLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+}
+
+model Department {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  code        String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users       User[]
+  students    Student[]
+  courses     Course[]
+}
+
+model Course {
+  id           String     @id @default(uuid())
+  name         String
+  code         String     @unique
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Student {
+  id           String     @id @default(uuid()) // Internal ID
+  studentId    String     @unique // College Student ID (e.g., REG123)
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  semester     Int
+
+  // Metrics
+  attendancePercentage Float
+  internalMarks        Float
+  assignmentMarks      Float
+  cgpa                 Float
+  backlogs             Int
+  scholarship          Boolean
+  feePending           Float
+  familyIncome         Float
+  travelDistance       Float
+  accommodation        Accommodation
+  internetAccess       Boolean
+  studyHours           Float
+  placementTraining    Boolean
+  libraryUsage         Float
+  lmsUsage             Float
+  extracurricular      Boolean
+  counsellingHistory   Boolean
+  medicalIssues        Boolean
+  mentalWellnessScore  Float
+  behaviorScore        Float
+  parentInteraction    Float
+  facultyFeedbackScore Float
+  gender               Gender
+  age                  Int
+  previousSemesterGpa  Float
+  projectsCompleted    Int
+  hackathonParticipation Boolean
+  internships          Int
+  codingSkillScore     Float
+  communicationScore   Float
+  leadershipScore      Float
+  stressLevel          StressLevel
+  sleepHours           Float
+  partTimeJob          Boolean
+  
+  // Target Variable
+  dropout              Boolean
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  predictions          Prediction[]
+}
+
+model Prediction {
+  id               String   @id @default(uuid())
+  predictionId     String?  @unique @default(uuid()) // Explicitly tracked for MLOps
+  studentId        String
+  student          Student  @relation(fields: [studentId], references: [id])
+  
+  riskPercentage   Float    // Calibrated probability
+  confidenceScore  Float
+  riskLevel        String   @default("Medium")
+  
+  topRiskFactors   Json     
+  positiveFactors  Json     
+  recommendations  Json     
+  
+  modelUsed        String   
+  modelVersion     String   
+  datasetVersion   String   @default("v1.0")
+  shapValues       Json     @default("[]")
+  
+  predictedAt      DateTime @default(now())
+}
+
+// ==========================================
+// MLOPS ENTERPRISE TABLES
+// ==========================================
+
+model DatasetVersion {
+  id               String   @id @default(uuid())
+  version          String   @unique
+  size             Int
+  excellentCount   Int
+  goodCount        Int
+  averageCount     Int
+  weakCount        Int
+  criticalCount    Int
+  syntheticCount   Int
+  realCount        Int
+  createdAt        DateTime @default(now())
+  
+  models           ModelRegistry[]
+  driftReports     DriftReport[]
+}
+
+model ModelRegistry {
+  id               String   @id @default(uuid())
+  modelVersion     String   @unique
+  datasetVersionId String
+  dataset          DatasetVersion @relation(fields: [datasetVersionId], references: [id])
+  
+  algorithm        String   // e.g. RandomForest, XGBoost
+  calibrationMethod String  // e.g. isotonic, sigmoid
+  
+  accuracy         Float
+  precision        Float
+  recall           Float
+  f1Score          Float
+  rocAuc           Float
+  brierScore       Float
+  expectedCalibrationError Float
+  
+  isActive         Boolean  @default(false)
+  isRolledBack     Boolean  @default(false)
+  
+  trainedAt        DateTime @default(now())
+  
+  validationMetrics ValidationMetric[]
+}
+
+model DriftReport {
+  id               String   @id @default(uuid())
+  datasetVersionId String
+  dataset          DatasetVersion @relation(fields: [datasetVersionId], references: [id])
+  
+  referenceVersion String   // The version it was compared against
+  
+  attendanceKsStat Float
+  cgpaKsStat       Float
+  backlogKsStat    Float
+  feeKsStat        Float
+  mentalKsStat     Float
+  behaviorKsStat   Float
+  
+  hasSignificantDrift Boolean
+  driftSummary     Json
+  
+  analyzedAt       DateTime @default(now())
+}
+
+model ValidationMetric {
+  id               String   @id @default(uuid())
+  modelRegistryId  String
+  model            ModelRegistry @relation(fields: [modelRegistryId], references: [id])
+  
+  testType         String   // "Random", "Edge", "Stress", "Boundary"
+  testCount        Int
+  
+  passedSmoothness Boolean
+  passedCalibration Boolean
+  passedLogical    Boolean
+  
+  report           Json
+  validatedAt      DateTime @default(now())
+}

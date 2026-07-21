@@ -1,0 +1,20 @@
+{
+  "name": "ai-dropout-prediction-system",
+  "version": "1.0.0",
+  "description": "AI Dropout Prediction System",
+  "scripts": {
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:ai": "cd ai-service && python -m venv .venv && .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt",
+    "setup": "npm run install:backend && npm run install:frontend && npm run install:ai",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "ai": "cd ai-service && .\\.venv\\Scripts\\python.exe main.py",
+    "seed": "cd backend && npx tsx seed_csv.ts",
+    "dev": "concurrently -n \"AI,BACKEND,FRONTEND\" -c \"blue,green,magenta\" \"npm run ai\" \"npm run backend\" \"npm run frontend\"",
+    "start": "npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
