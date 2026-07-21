@@ -3,8 +3,8 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'ai-service'))
 import pandas as pd
 import numpy as np
-from model import model_service
-from generator import generate_synthetic_data
+from model import model_service  # type: ignore
+from generator import generate_synthetic_data  # type: ignore
 
 print("=====================================================")
 print("PHASE 6: DATASET AUDIT")
